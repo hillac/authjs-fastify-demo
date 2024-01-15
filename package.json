@@ -1,0 +1,27 @@
+{
+  "name": "authjs-fastify-demo",
+  "version": "1.0.0",
+  "description": "Demo of authjs fastify package",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-fetch --experimental-global-webcrypto --loader ts-node/esm src/index.ts",
+    "dev:debug": "node --inspect --experimental-fetch --experimental-global-webcrypto --loader ts-node/esm src/index.ts",
+    "build": "tsc",
+    "serve": "node --experimental-fetch --experimental-global-webcrypto dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@auth/core": "../next-auth-fork/packages/core",
+    "@auth/fastify": "../next-auth-fork/packages/frameworks-fastify",
+    "@fastify/formbody": "^7.4.0",
+    "dotenv": "^16.3.1",
+    "fastify": "^4.25.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
