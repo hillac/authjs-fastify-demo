@@ -7,85 +7,39 @@ import dotenv from "dotenv";
 dotenv.config({ path: `.env.local` });
 
 const originalFetch = globalThis.fetch;
+const cache = new Map<string, Response>();
 
-function fakeFetch(
+async function cacheOpenidFetch(
   input: RequestInfo | URL,
   init?: RequestInit | undefined
 ): Promise<Response> {
-  if (
-    input === "https://accounts.google.com/.well-known/openid-configuration" &&
-    init?.method === "GET" &&
-    init?.headers &&
-    // @ts-expect-error
-    init.headers?.get &&
-    // @ts-expect-error
-    init.headers?.get("accept") === "application/json"
-  ) {
-    const res = new Response(
-      JSON.stringify({
-        issuer: "https://accounts.google.com",
-        authorization_endpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-        device_authorization_endpoint:
-          "https://oauth2.googleapis.com/device/code",
-        token_endpoint: "https://oauth2.googleapis.com/token",
-        userinfo_endpoint: "https://openidconnect.googleapis.com/v1/userinfo",
-        revocation_endpoint: "https://oauth2.googleapis.com/revoke",
-        jwks_uri: "https://www.googleapis.com/oauth2/v3/certs",
-        response_types_supported: [
-          "code",
-          "token",
-          "id_token",
-          "code token",
-          "code id_token",
-          "token id_token",
-          "code token id_token",
-          "none",
-        ],
-        subject_types_supported: ["public"],
-        id_token_signing_alg_values_supported: ["RS256"],
-        scopes_supported: ["openid", "email", "profile"],
-        token_endpoint_auth_methods_supported: [
-          "client_secret_post",
-          "client_secret_basic",
-        ],
-        claims_supported: [
-          "aud",
-          "email",
-          "email_verified",
-          "exp",
-          "family_name",
-          "given_name",
-          "iat",
-          "iss",
-          "name",
-          "picture",
-          "sub",
-        ],
-        code_challenge_methods_supported: ["plain", "S256"],
-        grant_types_supported: [
-          "authorization_code",
-          "refresh_token",
-          "urn:ietf:params:oauth:grant-type:device_code",
-          "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        ],
-      }),
-      {
-        status: 200,
-        statusText: "OK",
-        headers: {
-          "Content-Type": "application/json",
-        },
+  // cache the response of the openid-configuration by url
+  const strInput = input.toString();
+  if (strInput.includes("/.well-known/openid-configuration")) {
+    // Check if response is in cache
+    if (cache.has(strInput)) {
+      return cache.get(strInput)!.clone();
+    }
+
+    // If not in cache, fetch and store in cache
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const response = await originalFetch(input, init);
+        cache.set(strInput, response.clone());
+        return response;
+      } catch (error) {
+        attempts++;
+        console.log(`Attempt ${attempts} failed for ${strInput}. Retrying...`);
+        if (attempts >= 3) throw error;
       }
-    );
-    Object.defineProperty(res, "url", {
-      value: input,
-      writable: false,
-    });
-    return Promise.resolve(res);
+    }
   }
+  // normal fetch
   return originalFetch(input, init);
 }
-globalThis.fetch = fakeFetch;
+
+globalThis.fetch = cacheOpenidFetch;
 
 const fastify = Fastify({ logger: true });
 
@@ -94,6 +48,11 @@ const config = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: "openid profile email",
+        },
+      },
     }),
   ],
   secret: process.env.AUTH_SECRET!,
