@@ -1,9 +1,15 @@
 import fastify from "fastify";
-import { User } from "@auth/core/types";
+import { Session, User } from "@auth/core/types";
+
+// declare module "fastify" {
+//   interface FastifyReply {
+//     user: User;
+//   }
+// }
 
 declare module "fastify" {
   interface FastifyReply {
-    user: User;
+    session: Session | null;
   }
 }
 

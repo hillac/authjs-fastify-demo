@@ -16,11 +16,14 @@
     "@auth/core": "../next-auth-fork/packages/core",
     "@auth/fastify": "../next-auth-fork/packages/frameworks-fastify",
     "@fastify/formbody": "^7.4.0",
+    "@fastify/view": "^9.0.0",
     "dotenv": "^16.3.1",
-    "fastify": "^4.25.2"
+    "fastify": "^4.25.2",
+    "pug": "^3.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.2",
+    "@types/pug": "^2.0.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
